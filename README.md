@@ -22,18 +22,28 @@ Stakeholder
 
 Use cases
 ---
-1 Use Case Name : See order status
+Use Cases
 
-Actor : Customer , Transaction system
+1. Get current status
 
-Description : After customer finish payment. Transaction system will return a tracking id. And customer can use the tracking id to check order status in the future.
- 
+After customer finish payment, the service will return the tracking id. Customer can use the id to check current status of the order.
 
-2 Use Case Name : Update Status
+Primary Actor: Customer
 
-Actor : Admin
 
-Description : After admin already authenticated and customer already finished payment. Admin able to show the orders that customer finish payment (made by the transaction system). And then admin can update that orders state to let customers know the status.
+Scope: Transaction system
+
+Level: Very High
+
+Story: Customer use the id to check current order status.
+
+Main Success Scenario and steps
+
+1 Customer choose the order id in e-commerce page
+
+2 E-commerce site send request to OrderTracking Service.
+
+3 E-commerce show the detail.
 
 
 

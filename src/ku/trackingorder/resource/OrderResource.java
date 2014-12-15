@@ -56,7 +56,7 @@ public class OrderResource {
 	private static final int BAD_REQUEST = 400;
 	public static int PRETTY_PRINT_INDENT_FACTOR = 4;
 	/** Location of Fullfillment Service **/
-	private String service = "http://128.199.175.223:8000/fulfillment/orders/kurel";
+	private String service = "http://128.199.175.223:8000/fulfillment/orders/";
 	
 	private static HttpClient client;
 	private OrderDao dao;
@@ -116,28 +116,26 @@ public class OrderResource {
 	 * @throws URISyntaxException
 	 */
 	@POST
-	@Consumes({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
 	public Response createOrder(String body,@HeaderParam("Content-Type") String contentType) throws URISyntaxException{
-		org.eclipse.jetty.client.api.Request req = client.newRequest(service+"/payment");
+		org.eclipse.jetty.client.api.Request req = client.newRequest(service+"/payment/kurel");
 		req.method(HttpMethod.POST);
 		StringContentProvider content = new StringContentProvider(body);
 		System.out.println(body);
 		Order order = null;
 		if(contentType.equals(MediaType.APPLICATION_JSON)){
 			req.content(content, MediaType.APPLICATION_JSON);
-			order = jsontoOrder(body);
+//			order = jsontoOrder(body);
+			order = new Order();
+			JSONObject json = new JSONObject(body);
+			order.setId(Long.parseLong(json.getString("eCommerceOrderID").toString()));
 		}
-		else if(contentType.equals(MediaType.APPLICATION_XML)){
-			req.content(content, MediaType.APPLICATION_XML);
-			order = xmltoOrder(body);
-		}
-		System.out.println(order+" "+order.getId()+" "+order.getFulfillmentId());
 		try {
 			ContentResponse res = req.send();
+			System.out.println(res.getStatus());
 			if(res.getStatus() == Response.Status.CREATED.getStatusCode() && order != null){
+				System.out.println("test");
 				long fulfillmentId = Long.parseLong(res.getHeaders().get("Location"));
 				order.setfulfillmentId(fulfillmentId);
-				order.setId(order.geteCommerceOrderID());
 				dao.save(order);
 			}
 			else{
