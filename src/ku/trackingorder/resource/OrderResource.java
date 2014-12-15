@@ -56,7 +56,7 @@ public class OrderResource {
 	private static final int BAD_REQUEST = 400;
 	public static int PRETTY_PRINT_INDENT_FACTOR = 4;
 	/** Location of Fullfillment Service **/
-	private String service = "http://localhost:5722/ordf/orders/";
+	private String service = "http://128.199.175.223:8000/fulfillment/";
 	
 	private static HttpClient client;
 	private OrderDao dao;
@@ -131,7 +131,7 @@ public class OrderResource {
 			req.content(content, MediaType.APPLICATION_XML);
 			order = xmltoOrder(body);
 		}
-//		System.out.println(order+" "+order.getId()+" "+order.getFulfillmentId());
+		System.out.println(order+" "+order.getId()+" "+order.getFulfillmentId());
 		try {
 			ContentResponse res = req.send();
 			if(res.getStatus() == Response.Status.CREATED.getStatusCode() && order != null){
