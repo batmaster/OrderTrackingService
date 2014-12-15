@@ -56,7 +56,7 @@ public class OrderResource {
 	private static final int BAD_REQUEST = 400;
 	public static int PRETTY_PRINT_INDENT_FACTOR = 4;
 	/** Location of Fullfillment Service **/
-	private String service = "http://128.199.175.223:8000/fulfillment/";
+	private String service = "http://128.199.175.223:8000/fulfillment/orders/kurel";
 	
 	private static HttpClient client;
 	private OrderDao dao;
