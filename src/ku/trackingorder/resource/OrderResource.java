@@ -2,11 +2,16 @@ package ku.trackingorder.resource;
 
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import javax.inject.Singleton;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.HeaderParam;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.CacheControl;
@@ -22,9 +27,12 @@ import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
 import ku.trackingorder.entity.Order;
+import ku.trackingorder.service.DaoFactory;
+import ku.trackingorder.service.OrderDao;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
 import org.json.JSONObject;
 import org.json.XML;
@@ -45,18 +53,20 @@ public class OrderResource {
 	private CacheControl cache;
 
 	private static final int NOT_FOUND = 404;
+	private static final int BAD_REQUEST = 400;
 	public static int PRETTY_PRINT_INDENT_FACTOR = 4;
-	
 	/** Location of Fullfillment Service **/
 	private String service = "http://localhost:5722/ordf/orders/";
 	
 	private static HttpClient client;
+	private OrderDao dao;
 
 	/**
 	 * Constructor require nothing.
 	 * Initial cache proxy
 	 */
 	public OrderResource() {
+		dao = DaoFactory.getInstance().getOrderDao();
 		cache = new CacheControl();
 		cache.setMaxAge(-1);
 		cache.setPrivate(true);
@@ -73,15 +83,18 @@ public class OrderResource {
 	/**
 	 * Handle GET by specify id.
 	 * Return an order with that id.
-	 * @param id id of order
-	 * @param request context or resuest
+	 * @param id id of ecommerceOrderId
+	 * @param request context or request
 	 * @return an order with specify id
 	 */
 	@GET
 	@Path("{id}")
 	public Response getOrder(@PathParam("id") long id, @Context Request request) {
 		System.out.println("in method");
-		org.eclipse.jetty.client.api.Request req = client.newRequest(service +id);
+		if(!dao.containID(id))
+			return Response.status(NOT_FOUND).build();
+		long fullfillmentId = dao.find(id).getFulfillmentId();
+		org.eclipse.jetty.client.api.Request req = client.newRequest(service +fullfillmentId);
 		req.method(HttpMethod.GET);
 		req.accept(MediaType.APPLICATION_XML);
 		ContentResponse res;
@@ -96,6 +109,47 @@ public class OrderResource {
 		}
 	}
 
+	/**
+	 * Sent request to orderFullfillment and save order.
+	 * @param body http body.
+	 * @return 201 Created if success else 400 Bad Request.
+	 * @throws URISyntaxException
+	 */
+	@POST
+	@Consumes({MediaType.APPLICATION_XML,MediaType.APPLICATION_JSON})
+	public Response createOrder(String body,@HeaderParam("Content-Type") String contentType) throws URISyntaxException{
+		org.eclipse.jetty.client.api.Request req = client.newRequest(service+"/payment");
+		req.method(HttpMethod.POST);
+		StringContentProvider content = new StringContentProvider(body);
+		System.out.println(body);
+		Order order = null;
+		if(contentType.equals(MediaType.APPLICATION_JSON)){
+			req.content(content, MediaType.APPLICATION_JSON);
+			order = jsontoOrder(body);
+		}
+		else if(contentType.equals(MediaType.APPLICATION_XML)){
+			req.content(content, MediaType.APPLICATION_XML);
+			order = xmltoOrder(body);
+		}
+//		System.out.println(order+" "+order.getId()+" "+order.getFulfillmentId());
+		try {
+			ContentResponse res = req.send();
+			if(res.getStatus() == Response.Status.CREATED.getStatusCode() && order != null){
+				long fulfillmentId = Long.parseLong(res.getHeaders().get("Location"));
+				order.setfulfillmentId(fulfillmentId);
+				order.setId(order.geteCommerceOrderID());
+				dao.save(order);
+			}
+			else{
+				return Response.status(BAD_REQUEST).build();
+			}
+		} catch (InterruptedException | TimeoutException | ExecutionException e) {
+			return Response.status(BAD_REQUEST).build();
+		}
+				
+		return Response.created(new URI(uriinfo.getAbsolutePath()+""+order.geteCommerceOrderID())).build();
+	}
+	
 	/**
 	 * Get hashcode of an oder.
 	 * @param order order that want to get etag code

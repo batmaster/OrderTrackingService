@@ -10,6 +10,7 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
 
 
 /**
@@ -30,19 +31,40 @@ public class Order {
 	@XmlAttribute
 	@GeneratedValue(strategy=GenerationType.AUTO)
 	private long id;
-//	@XmlElement(name="status")
-//	@OneToMany(mappedBy="order",cascade = CascadeType.ALL,fetch=FetchType.EAGER)
-//	private List<Status> statuslist;
+	
+	/**	Id of fullFillment. */
+	@XmlElement
+	private long fullfillmentId;
 	
 	@XmlElement
 	private String status;
 	
+	/**
+	 * Use for setId.
+	 */
+	@XmlTransient
+	private long eCommerceOrderID;
 //	public Order() {
 //		this(0,new ArrayList<Status>());
 //	}
 	
+	public long geteCommerceOrderID() {
+		return eCommerceOrderID;
+	}
+
+	public void seteCommerceOrderID(long eCommerceOrderID) {
+		this.eCommerceOrderID = eCommerceOrderID;
+	}
+
 	public Order(){
 		this(0, "");
+	}
+	
+	public void setfulfillmentId(long fullfillmentId){
+		this.fullfillmentId = fullfillmentId;
+	}
+	public long getFulfillmentId() {
+		return fullfillmentId;
 	}
 	
 	public Order(long id,String status){
@@ -50,16 +72,6 @@ public class Order {
 		this.status = status;
 	}
 	
-//	public Order(long id,List<Status> statuslist) {
-//		this.id = id;
-//		this.statuslist = statuslist;
-//	}
-//	
-//	public void addStatus(Status status){
-//		status.setOrder(this);
-//		statuslist.add(status);
-//	}
-//
 	public long getId() {
 		return id;
 	}
@@ -67,42 +79,10 @@ public class Order {
 	public void setId(long id) {
 		this.id = id;
 	}
-
-//	public List<Status> getStatuslist() {
-//		return statuslist;
-//	}
-//
-//	public void setStatuslist(List<Status> statuslist) {
-//		this.statuslist = statuslist;
-//		System.out.println("in 4");
-//	}
-	
-//	public void saveOrderInStatus(){
-//		for(int i = 0;i<statuslist.size();i++){
-//			statuslist.get(i).setOrder(this);
-//		}
-//	}
-//	
-//	@Override
-//	public String toString() {
-//		return id + statuslist.toString();
-//	}
-
-
-
-//	public void setStatus(Status status) {
-//		status.setOrder(this);
-//		List<Status> statuslist = new ArrayList<>();
-//		statuslist.add(status);
-//		this.statuslist = statuslist;
-//	}
 	
 	@Override
 	public int hashCode() {
 		int hascode = (id+" "+status).hashCode();
-//		for(int i = 0; i < statuslist.size();i++){
-//			hascode += statuslist.get(i).hashCode();
-//		}
 		return hascode;
 	}
 }
