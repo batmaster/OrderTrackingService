@@ -105,7 +105,7 @@ public class OrderResource {
 			JSONObject json = new JSONObject(res.getContentAsString()).getJSONObject("order");
 			order.setOrder_status(json.getString("order_status"));
 			order.setPayment_status(json.getString("payment_status"));
-			return Response.ok(order).build();
+			return Response.ok(jsonParser(order)).build();
 		} catch (InterruptedException | TimeoutException | ExecutionException e) {
 			System.out.println(e.toString());
 			return Response.status(Status.BAD_REQUEST).build();
