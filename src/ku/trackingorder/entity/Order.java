@@ -33,12 +33,30 @@ public class Order {
 	private long id;
 	
 	/**	Id of fullFillment. */
-	@XmlElement
+	@XmlTransient
 	private long fullfillmentId;
 	
 	@XmlElement
-	private String status;
+	private String order_status;
 	
+	@XmlElement
+	private String payment_status;
+	public String getOrder_status() {
+		return order_status;
+	}
+
+	public void setOrder_status(String order_status) {
+		this.order_status = order_status;
+	}
+
+	public String getPayment_status() {
+		return payment_status;
+	}
+
+	public void setPayment_status(String payment_status) {
+		this.payment_status = payment_status;
+	}
+
 	/**
 	 * Use for setId.
 	 */
@@ -69,7 +87,7 @@ public class Order {
 	
 	public Order(long id,String status){
 		this.id = id;
-		this.status = status;
+		this.order_status = status;
 	}
 	
 	public long getId() {
@@ -82,7 +100,7 @@ public class Order {
 	
 	@Override
 	public int hashCode() {
-		int hascode = (id+" "+status).hashCode();
+		int hascode = (id+" "+order_status).hashCode();
 		return hascode;
 	}
 }

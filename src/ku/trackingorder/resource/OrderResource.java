@@ -56,7 +56,8 @@ public class OrderResource {
 	private static final int BAD_REQUEST = 400;
 	public static int PRETTY_PRINT_INDENT_FACTOR = 4;
 	/** Location of Fullfillment Service **/
-	private String service = "http://128.199.175.223:8000/fulfillment/orders/";
+	private String service = "http://128.199.132.197/dntk/api/v1/orders";
+//			"http://128.199.175.223:8000/fulfillment/orders/";
 	
 	private static HttpClient client;
 	private OrderDao dao;
@@ -93,16 +94,18 @@ public class OrderResource {
 		System.out.println("in method");
 		if(!dao.containID(id))
 			return Response.status(NOT_FOUND).build();
-		long fullfillmentId = dao.find(id).getFulfillmentId();
-		org.eclipse.jetty.client.api.Request req = client.newRequest(service +fullfillmentId);
+		Order order = dao.find(id);
+		long fullfillmentId = order.getFulfillmentId();
+		org.eclipse.jetty.client.api.Request req = client.newRequest(service +"/"+fullfillmentId);
 		req.method(HttpMethod.GET);
 		req.accept(MediaType.APPLICATION_XML);
 		ContentResponse res;
 		try {
 			res = req.send();
-			Order order = xmltoOrder(res.getContentAsString());
-			System.out.println(jsonParser(order));
-			return Response.ok(jsonParser(order)).build();
+			JSONObject json = new JSONObject(res.getContentAsString()).getJSONObject("order");
+			order.setOrder_status(json.getString("order_status"));
+			order.setPayment_status(json.getString("payment_status"));
+			return Response.ok(order).build();
 		} catch (InterruptedException | TimeoutException | ExecutionException e) {
 			System.out.println(e.toString());
 			return Response.status(Status.BAD_REQUEST).build();
@@ -116,37 +119,73 @@ public class OrderResource {
 	 * @throws URISyntaxException
 	 */
 	@POST
+	@Consumes(MediaType.APPLICATION_JSON)
 	public Response createOrder(String body,@HeaderParam("Content-Type") String contentType) throws URISyntaxException{
-		org.eclipse.jetty.client.api.Request req = client.newRequest(service+"/payment/kurel");
+		org.eclipse.jetty.client.api.Request req = client.newRequest(service);
 		req.method(HttpMethod.POST);
 		StringContentProvider content = new StringContentProvider(body);
 		System.out.println(body);
 		Order order = null;
 		if(contentType.equals(MediaType.APPLICATION_JSON)){
 			req.content(content, MediaType.APPLICATION_JSON);
-//			order = jsontoOrder(body);
 			order = new Order();
 			JSONObject json = new JSONObject(body);
-			order.setId(Long.parseLong(json.getString("eCommerceOrderID").toString()));
+			// need id for orderId
+			order.setId(json.getJSONObject("order").getLong("id"));
 		}
 		try {
 			ContentResponse res = req.send();
 			System.out.println(res.getStatus());
-			if(res.getStatus() == Response.Status.CREATED.getStatusCode() && order != null){
+			if(res.getStatus() == Response.Status.OK.getStatusCode() && order != null){
 				System.out.println("test");
-				long fulfillmentId = Long.parseLong(res.getHeaders().get("Location"));
+				JSONObject responsebody = new JSONObject(res.getContentAsString());
+				long fulfillmentId =  responsebody.getLong("order_id");
 				order.setfulfillmentId(fulfillmentId);
 				dao.save(order);
+				System.out.println(dao.find(order.getId()).getFulfillmentId());
+				return Response.created(new URI(uriinfo.getAbsolutePath()+""+order.getId())).build();
 			}
 			else{
+				System.out.println("in else");
 				return Response.status(BAD_REQUEST).build();
 			}
 		} catch (InterruptedException | TimeoutException | ExecutionException e) {
+			System.out.println("in catch");
 			return Response.status(BAD_REQUEST).build();
-		}
-				
-		return Response.created(new URI(uriinfo.getAbsolutePath()+""+order.geteCommerceOrderID())).build();
+		}				
 	}
+	
+//	public Response createOrder(String body,@HeaderParam("Content-Type") String contentType) throws URISyntaxException{
+//		org.eclipse.jetty.client.api.Request req = client.newRequest(service+"/payment/kurel");
+//		req.method(HttpMethod.POST);
+//		StringContentProvider content = new StringContentProvider(body);
+//		System.out.println(body);
+//		Order order = null;
+//		if(contentType.equals(MediaType.APPLICATION_JSON)){
+//			req.content(content, MediaType.APPLICATION_JSON);
+////			order = jsontoOrder(body);
+//			order = new Order();
+//			JSONObject json = new JSONObject(body);
+//			order.setId(Long.parseLong(json.getString("eCommerceOrderID").toString()));
+//		}
+//		try {
+//			ContentResponse res = req.send();
+//			System.out.println(res.getStatus());
+//			if(res.getStatus() == Response.Status.CREATED.getStatusCode() && order != null){
+//				System.out.println("test");
+//				long fulfillmentId = Long.parseLong(res.getHeaders().get("Location"));
+//				order.setfulfillmentId(fulfillmentId);
+//				dao.save(order);
+//			}
+//			else{
+//				return Response.status(BAD_REQUEST).build();
+//			}
+//		} catch (InterruptedException | TimeoutException | ExecutionException e) {
+//			return Response.status(BAD_REQUEST).build();
+//		}
+//				
+//		return Response.created(new URI(uriinfo.getAbsolutePath()+""+order.geteCommerceOrderID())).build();
+//	}
 	
 	/**
 	 * Get hashcode of an oder.
