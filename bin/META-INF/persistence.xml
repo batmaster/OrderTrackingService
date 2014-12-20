@@ -22,3 +22,5 @@
 	</properties>
   </persistence-unit>
 </persistence>
+
+<!-- create-tables, create-or-extend-tables, drop-and-create-tables, none -->
