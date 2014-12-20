@@ -14,6 +14,7 @@ import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.CacheControl;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
@@ -57,8 +58,8 @@ public class OrderResource {
 	public static int PRETTY_PRINT_INDENT_FACTOR = 4;
 	/** Location of Fullfillment Service **/
 	private String service = "http://128.199.132.197/dntk/api/v1/orders";
-//			"http://128.199.175.223:8000/fulfillment/orders/";
-	
+	//			"http://128.199.175.223:8000/fulfillment/orders/";
+
 	private static HttpClient client;
 	private OrderDao dao;
 
@@ -90,6 +91,7 @@ public class OrderResource {
 	 */
 	@GET
 	@Path("{id}")
+	@Produces(MediaType.APPLICATION_JSON)
 	public Response getOrder(@PathParam("id") long id, @Context Request request) {
 		System.out.println("in method");
 		if(!dao.containID(id))
@@ -105,6 +107,8 @@ public class OrderResource {
 			JSONObject json = new JSONObject(res.getContentAsString()).getJSONObject("order");
 			order.setOrder_status(json.getString("order_status"));
 			order.setPayment_status(json.getString("payment_status"));
+			if(json.has("shipping_status"))
+				order.setShipping_Status(json.getString("shipping_status"));
 			return Response.ok(jsonParser(order)).build();
 		} catch (InterruptedException | TimeoutException | ExecutionException e) {
 			System.out.println(e.toString());
@@ -126,17 +130,15 @@ public class OrderResource {
 		StringContentProvider content = new StringContentProvider(body);
 		System.out.println(body);
 		Order order = null;
-		if(contentType.equals(MediaType.APPLICATION_JSON)){
-			req.content(content, MediaType.APPLICATION_JSON);
-			order = new Order();
-			JSONObject json = new JSONObject(body);
-			// need id for orderId
-			order.setId(json.getJSONObject("order").getLong("id"));
-		}
+		req.content(content, MediaType.APPLICATION_JSON);
+		order = new Order();
+		JSONObject json = new JSONObject(body);
+		// need id for orderId
+		order.setId(json.getJSONObject("order").getLong("id"));
 		try {
 			ContentResponse res = req.send();
 			System.out.println(res.getStatus());
-			if(res.getStatus() == Response.Status.OK.getStatusCode() && order != null){
+			if(res.getStatus() == Response.Status.OK.getStatusCode() && order != null && !dao.containID(order.getId())){
 				System.out.println("test");
 				JSONObject responsebody = new JSONObject(res.getContentAsString());
 				long fulfillmentId =  responsebody.getLong("order_id");
@@ -154,39 +156,7 @@ public class OrderResource {
 			return Response.status(BAD_REQUEST).build();
 		}				
 	}
-	
-//	public Response createOrder(String body,@HeaderParam("Content-Type") String contentType) throws URISyntaxException{
-//		org.eclipse.jetty.client.api.Request req = client.newRequest(service+"/payment/kurel");
-//		req.method(HttpMethod.POST);
-//		StringContentProvider content = new StringContentProvider(body);
-//		System.out.println(body);
-//		Order order = null;
-//		if(contentType.equals(MediaType.APPLICATION_JSON)){
-//			req.content(content, MediaType.APPLICATION_JSON);
-////			order = jsontoOrder(body);
-//			order = new Order();
-//			JSONObject json = new JSONObject(body);
-//			order.setId(Long.parseLong(json.getString("eCommerceOrderID").toString()));
-//		}
-//		try {
-//			ContentResponse res = req.send();
-//			System.out.println(res.getStatus());
-//			if(res.getStatus() == Response.Status.CREATED.getStatusCode() && order != null){
-//				System.out.println("test");
-//				long fulfillmentId = Long.parseLong(res.getHeaders().get("Location"));
-//				order.setfulfillmentId(fulfillmentId);
-//				dao.save(order);
-//			}
-//			else{
-//				return Response.status(BAD_REQUEST).build();
-//			}
-//		} catch (InterruptedException | TimeoutException | ExecutionException e) {
-//			return Response.status(BAD_REQUEST).build();
-//		}
-//				
-//		return Response.created(new URI(uriinfo.getAbsolutePath()+""+order.geteCommerceOrderID())).build();
-//	}
-	
+
 	/**
 	 * Get hashcode of an oder.
 	 * @param order order that want to get etag code

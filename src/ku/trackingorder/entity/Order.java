@@ -41,6 +41,18 @@ public class Order {
 	
 	@XmlElement
 	private String payment_status;
+	
+	@XmlElement
+	private String shipping_Status;
+	
+	public String getShipping_Status() {
+		return shipping_Status;
+	}
+
+	public void setShipping_Status(String shipping_Status) {
+		this.shipping_Status = shipping_Status;
+	}
+
 	public String getOrder_status() {
 		return order_status;
 	}
